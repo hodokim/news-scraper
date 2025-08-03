@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="newsscraper.mapper.KeywordMapper">
+
+    <insert id="insertKeyword" parameterType="KeywordDTO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO keywords (user_id, keyword)
+        VALUES (#{userId}, #{keyword})
+    </insert>
+
+    <select id="findKeywordsByUserId" parameterType="long" resultType="KeywordDTO">
+        SELECT id, user_id, keyword, created_at
+        FROM keywords
+        WHERE user_id = #{userId}
+    </select>
+
+    <delete id="deleteKeyword" parameterType="long">
+        DELETE FROM keywords WHERE id = #{keywordId}
+    </delete>
+
+</mapper>
