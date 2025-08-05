@@ -9,7 +9,7 @@ COPY .mvn/ .mvn
 COPY mvnw .
 COPY pom.xml .
 
-# --- 해결책: mvnw 스크립트에 실행 권한 부여 ---
+# mvnw 스크립트에 실행 권한 부여 ---
 RUN chmod +x ./mvnw
 
 # 4. Maven 의존성 다운로드
@@ -23,4 +23,4 @@ RUN ./mvnw clean package -DskipTests
 
 # 7. 애플리케이션 실행
 # pom.xml의 version에 맞춰 파일명을 확인
-ENTRYPOINT ["java", "-jar", "target/news-scrap-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "target/news-scraper-0.0.1-SNAPSHOT.jar"]
