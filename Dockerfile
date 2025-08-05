@@ -9,7 +9,7 @@ COPY .mvn/ .mvn
 COPY mvnw .
 COPY pom.xml .
 
-# --- 해결책: mvnw 스크립트에 실행 권한 부여 ---
+# mvnw 스크립트에 실행 권한 부여 ---
 RUN chmod +x ./mvnw
 
 # 4. Maven 의존성 다운로드
