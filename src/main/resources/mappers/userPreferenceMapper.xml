@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="newsscraper.mapper.UserPreferenceMapper">
+
+    <insert id="insertUserPreferredSite">
+        INSERT INTO user_preferred_sites (user_id, site_name)
+        VALUES (#{userId}, #{siteName})
+    </insert>
+
+    <delete id="deleteUserPreferredSite">
+        DELETE FROM user_preferred_sites
+        WHERE user_id = #{userId} AND site_name = #{siteName}
+    </delete>
+
+</mapper>

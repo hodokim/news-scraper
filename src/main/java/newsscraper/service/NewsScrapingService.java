@@ -1,5 +1,8 @@
+// src/main/java/newsscraper/service/NewsScrapingService.java
+
 package newsscraper.service;
 
+import newsscraper.domain.ScrapingSite;
 import newsscraper.dto.KeywordDTO;
 import newsscraper.dto.NewsDTO;
 import newsscraper.dto.UserDTO;
@@ -32,10 +35,15 @@ public class NewsScrapingService {
     private final KeywordMapper keywordMapper;
     private final NewsService newsService;
 
-    /**
-     * 정기적으로 모든 키워드에 대해 뉴스를 스크래핑하는 스케줄링 메소드
-     */
-    @Scheduled(cron = "0 0 * * * *") // 매시 정각에 실행
+    public void scrapeFromNaver(KeywordDTO keywordDto) {
+        scrapeFromSite(keywordDto, ScrapingSite.NAVER);
+    }
+
+    public void scrapeFromDaum(KeywordDTO keywordDto) {
+        scrapeFromSite(keywordDto, ScrapingSite.DAUM);
+    }
+
+    @Scheduled(cron = "0 0 * * * *")
     public void scrapeNewsPeriodically() {
         log.info("정기 뉴스 스크래핑 작업을 시작합니다.");
 
@@ -46,16 +54,24 @@ public class NewsScrapingService {
         }
 
         for (UserDTO user : users) {
+            List<String> userPreferredSites = user.getPreferredSites();
+            if (userPreferredSites == null || userPreferredSites.isEmpty()) {
+                log.info("사용자 '{}' 에게 설정된 스크래핑 사이트가 없습니다.", user.getUsername());
+                continue;
+            }
+
             List<KeywordDTO> keywords = keywordMapper.findKeywordsByUserId(user.getId());
             if (keywords.isEmpty()) {
                 continue;
             }
 
-            log.info("사용자 '{}'의 키워드에 대한 스크래핑을 시작합니다.", user.getUsername());
+            log.info("사용자 '{}'의 키워드에 대한 스크래핑을 시작합니다. (설정된 사이트: {})", user.getUsername(), userPreferredSites);
             for (KeywordDTO keyword : keywords) {
-                // TODO: 사용자가 설정한 사이트만 스크래핑하도록 로직 추가 필요
-                scrapeFromNaver(keyword);
-                scrapeFromDaum(keyword);
+                for (ScrapingSite site : ScrapingSite.values()) {
+                    if (userPreferredSites.contains(site.name())) {
+                        scrapeFromSite(keyword, site);
+                    }
+                }
             }
         }
         log.info("정기 뉴스 스크래핑 작업을 완료했습니다.");
@@ -68,64 +84,49 @@ public class NewsScrapingService {
     @Async
     public void scrapeForKeyword(KeywordDTO keywordDto) {
         log.debug("키워드 '{}'에 대한 즉시 스크래핑을 시작합니다.", keywordDto.getKeyword());
-        scrapeFromNaver(keywordDto);
-        scrapeFromDaum(keywordDto);
+
+        // 키워드를 등록한 사용자의 정보를 가져옵니다.
+        UserDTO user = userMapper.findById(keywordDto.getUserId());
+        if (user == null) {
+            log.error("키워드에 해당하는 사용자를 찾을 수 없습니다. (UserId: {})", keywordDto.getUserId());
+            return;
+        }
+
+        List<String> userPreferredSites = user.getPreferredSites();
+        if (userPreferredSites == null || userPreferredSites.isEmpty()) {
+            log.debug("사용자 '{}' 에게 설정된 스크래핑 사이트가 없어 즉시 스크래핑을 건너뜁니다.", user.getUsername());
+            return;
+        }
+
+        log.debug("사용자 '{}'의 즉시 스크래핑을 시작합니다. (설정된 사이트: {})", user.getUsername(), userPreferredSites);
+        // 사용자가 설정한 사이트에 대해서만 스크래핑을 수행합니다.
+        for (ScrapingSite site : ScrapingSite.values()) {
+            if (userPreferredSites.contains(site.name())) {
+                scrapeFromSite(keywordDto, site);
+            }
+        }
+
         log.debug("키워드 '{}'에 대한 즉시 스크래핑을 완료했습니다.", keywordDto.getKeyword());
     }
 
-    public void scrapeFromNaver(KeywordDTO keywordDto) {
-        String site = "NAVER";
+    private void scrapeFromSite(KeywordDTO keywordDto, ScrapingSite site) {
         try {
             String encodedKeyword = URLEncoder.encode(keywordDto.getKeyword(), StandardCharsets.UTF_8);
-            String url = "https://search.naver.com/search.naver?where=news&query=" + encodedKeyword;
+            String url = String.format(site.getUrlFormat(), encodedKeyword);
 
-            // 인코딩된 URL을 함께 로깅하여 문제 확인
-            log.debug("Scrape START {}", url);
-            Document doc = Jsoup.connect(url).get();
-            Elements newsElements = doc.select("div.kYW833HRgWuWh92opkU9");
-            for (Element element : newsElements) {
-                // 2. 각 세부 정보(제목, 링크, 언론사, 요약, 발행일)를 추출하는 선택자 변경
-                Element titleAnchor = element.select("a.IQnq6B4xVFZbhCOvK9Fy").first();
-                String title = (titleAnchor != null) ? titleAnchor.text() : "제목 없음";
-                String link = (titleAnchor != null) ? titleAnchor.attr("href") : "링크 없음";
+            log.debug("[{}] Scrape START - URL: {}", site.getSiteName(), url);
 
-                Element pressElement = element.select("span.sds-comps-profile-info-title-text").first();
-                String press = (pressElement != null) ? pressElement.text() : "언론사 없음";
+            Document doc = Jsoup.connect(url)
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36")
+                    .get();
 
-                Element summaryElement = element.select("span.sds-comps-text-type-body1").first();
-                String summary = (summaryElement != null) ? summaryElement.text() : "요약 없음";
-
-                // 실제 발행일 파싱하여 설정
-                Element dateElement = element.selectFirst("span.sds-comps-profile-info-title-sub-text");
-                String dateString = (dateElement != null) ? dateElement.text() : null;
-
-                NewsDTO news = new NewsDTO();
-                news.setKeywordId(keywordDto.getId());
-                news.setTitle(title);
-                news.setLink(link);
-                news.setSummary(summary);
-                news.setSourceSite(site);
-                news.setPublishedAt(parseNaverDate(dateString));
-                newsService.saveNews(news);
-            }
-            log.debug("[{}] '{}' Scraping END", site, keywordDto.getKeyword());
-        } catch (IOException e) {
-            log.error("[{}] Scraping ERROR: {}", site, e.getMessage());
-        }
-    }
-
-    private void scrapeFromDaum(KeywordDTO keywordDto) {
-        String site = "DAUM";
-        try {
-            String encodedKeyword = URLEncoder.encode(keywordDto.getKeyword(), StandardCharsets.UTF_8.toString());
-            String url = "https://search.daum.net/search?w=news&q=" + encodedKeyword;
-
-            Document doc = Jsoup.connect(url).get();
-            Elements newsElements = doc.select("ul.c-list-basic > li");
+            Elements newsElements = doc.select(site.getNewsItemSelector());
+            log.debug("[{}] Found {} news items.", site.getSiteName(), newsElements.size());
 
             for (Element element : newsElements) {
-                Element titleElement = element.selectFirst("a.c-item-content");
-                Element summaryElement = element.selectFirst("p.c-item-contents");
+                Element titleElement = element.selectFirst(site.getTitleSelector());
+                Element summaryElement = element.selectFirst(site.getSummarySelector());
+                Element dateElement = element.selectFirst(site.getDateSelector());
 
                 if (titleElement != null && summaryElement != null) {
                     NewsDTO news = new NewsDTO();
@@ -133,17 +134,21 @@ public class NewsScrapingService {
                     news.setTitle(titleElement.text());
                     news.setLink(titleElement.attr("href"));
                     news.setSummary(summaryElement.text());
-                    news.setSourceSite(site);
-                    news.setPublishedAt(OffsetDateTime.now()); // 실제 발행일 파싱 필요
+                    news.setSourceSite(site.getSiteName());
+                    news.setPublishedAt(OffsetDateTime.now().withNano(0));
+
+                    String dateString = (dateElement != null) ? dateElement.text() : null;
 
                     newsService.saveNews(news);
                 }
             }
-            log.debug("Scrape END {}", url);
+            log.debug("[{}] '{}' Scraping END", site.getSiteName(), keywordDto.getKeyword());
+
         } catch (IOException e) {
-            log.debug("Scrape ERROR");
+            log.error("[{}] Scraping ERROR for keyword '{}': {}", site.getSiteName(), keywordDto.getKeyword(), e.getMessage());
         }
     }
+
 
     private OffsetDateTime parseNaverDate(String dateString) {
         OffsetDateTime now = OffsetDateTime.now();

@@ -1,42 +1,70 @@
+// SecurityConfig.java
 package newsscraper.config;
 
+import lombok.RequiredArgsConstructor;
+import newsscraper.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager; // 추가
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration; // 추가
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // CSRF 보호 비활성화 (람다 스타일)
+                .cors(withDefaults()) // CORS 설정 추가
                 .csrf(AbstractHttpConfigurer::disable)
-                // 폼 로그인 비활성화
-                .formLogin(AbstractHttpConfigurer::disable)
-                // HTTP Basic 인증 비활성화
-                .httpBasic(AbstractHttpConfigurer::disable)
-                // 세션 관리 정책을 STATELESS로 설정 (JWT 사용을 위함)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 요청에 대한 인가 규칙 설정 (authorizeRequests() -> authorizeHttpRequests())
+                // ... (기존 설정 유지)
                 .authorizeHttpRequests(authorize -> authorize
-                        // requestMatchers() 사용
-                        .requestMatchers("/api/users/register").permitAll()
-                        // 그 외 모든 요청은 일단 허용 (나중에 .authenticated() 등으로 변경 가능)
-                        .anyRequest().permitAll()
-                );
+                        .requestMatchers("/api/users/register", "/api/users/login").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
+
+    // CORS 설정 Bean 추가
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173")); // Vue 개발 서버 주소
+        configuration.setAllowedMethods(Arrays.asList("GET","POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    // AuthenticationManager를 Bean으로 등록합니다.
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    /*
+     * 이 파일에 있던 PasswordEncoder Bean은 AppConfig로 역할을 이전했으므로
+     * 반드시 삭제해야 합니다!
+     * @Bean
+     * public PasswordEncoder passwordEncoder() { ... }
+     */
 }

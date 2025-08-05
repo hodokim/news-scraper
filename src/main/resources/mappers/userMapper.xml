@@ -2,27 +2,40 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="newsscraper.mapper.UserMapper">
 
+    <resultMap id="userWithPreferredSites" type="newsscraper.dto.UserDTO">
+        <id property="id" column="user_id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="email" column="email"/>
+        <result property="createdAt" column="created_at"/>
+        <collection property="preferredSites" ofType="java.lang.String">
+            <result column="site_name"/>
+        </collection>
+    </resultMap>
+
     <insert id="insertUser" parameterType="UserDTO" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO users (username, password, email)
         VALUES (#{username}, #{password}, #{email})
     </insert>
 
-    <select id="findByUsername" parameterType="String" resultType="UserDTO">
-        SELECT id, username, password, email, created_at
-        FROM users
-        WHERE username = #{username}
+    <select id="findByUsername" parameterType="String" resultMap="userWithPreferredSites">
+        SELECT u.id as user_id, u.username, u.password, u.email, u.created_at, ups.site_name
+        FROM users u
+                 LEFT JOIN user_preferred_sites ups ON u.id = ups.user_id
+        WHERE u.username = #{username}
     </select>
 
-    <select id="findById" parameterType="long" resultType="UserDTO">
-        SELECT id, username, password, email, created_at
-        FROM users
-        WHERE id = #{id}
+    <select id="findById" parameterType="long" resultMap="userWithPreferredSites">
+        SELECT u.id as user_id, u.username, u.password, u.email, u.created_at, ups.site_name
+        FROM users u
+                 LEFT JOIN user_preferred_sites ups ON u.id = ups.user_id
+        WHERE u.id = #{id}
     </select>
 
-    <!-- 모든 사용자 조회를 위한 쿼리 추가 -->
-    <select id="findAll" resultType="UserDTO">
-        SELECT id, username, password, email, created_at
-        FROM users
+    <select id="findAll" resultMap="userWithPreferredSites">
+        SELECT u.id as user_id, u.username, u.password, u.email, u.created_at, ups.site_name
+        FROM users u
+                 LEFT JOIN user_preferred_sites ups ON u.id = ups.user_id
     </select>
 
 </mapper>
