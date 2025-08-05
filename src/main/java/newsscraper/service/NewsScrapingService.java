@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -44,29 +45,34 @@ public class NewsScrapingService {
             log.info("등록된 사용자가 없어 스크래핑을 종료합니다.");
             return;
         }
-
-        for (UserDTO user : users) {
-            List<String> userPreferredSites = user.getPreferredSites();
-            if (userPreferredSites == null || userPreferredSites.isEmpty()) {
-                log.info("사용자 '{}' 에게 설정된 스크래핑 사이트가 없습니다.", user.getUsername());
-                continue;
-            }
-
-            List<KeywordDTO> keywords = keywordMapper.findKeywordsByUserId(user.getId());
-            if (keywords.isEmpty()) {
-                continue;
-            }
-
-            log.info("사용자 '{}'의 키워드에 대한 스크래핑을 시작합니다. (설정된 사이트: {})", user.getUsername(), userPreferredSites);
-            for (KeywordDTO keyword : keywords) {
-                for (ScrapingSite site : ScrapingSite.values()) {
-                    if (userPreferredSites.contains(site.name())) {
-                        scrapeFromSite(keyword, site);
-                    }
-                }
-            }
-        }
+        // 각 사용자에 대한 스크래핑 작업 처리
+        users.forEach(this::scrapeForUser);
         log.info("정기 뉴스 스크래핑 작업을 완료했습니다.");
+    }
+
+    /**
+     * 특정 사용자 한 명에 대한 스크래핑 로직을 처리
+     * @param user 스크래핑을 수행할 사용자 DTO
+     */
+    private void scrapeForUser(UserDTO user) {
+        List<String> preferredSites = user.getPreferredSites();
+        if (preferredSites == null || preferredSites.isEmpty()) {
+            log.info("사용자 '{}' 에게 설정된 스크래핑 사이트가 없습니다.", user.getUsername());
+            return;
+        }
+
+        List<KeywordDTO> keywords = keywordMapper.findKeywordsByUserId(user.getId());
+        if (keywords.isEmpty()) {
+            log.debug("사용자 '{}' 에게 등록된 키워드가 없습니다.", user.getUsername());
+            return;
+        }
+
+        log.info("사용자 '{}'의 키워드에 대한 스크래핑을 시작합니다. (설정된 사이트: {})", user.getUsername(), preferredSites);
+        keywords.forEach(keyword ->
+                Arrays.stream(ScrapingSite.values())
+                        .filter(site -> preferredSites.contains(site.name())) // 사용자가 선호하는 사이트만 필터링
+                        .forEach(site -> scrapeFromSite(keyword, site)) // 각 사이트에 대해 스크래핑 실행
+        );
     }
 
     /**
@@ -128,8 +134,6 @@ public class NewsScrapingService {
                     news.setSummary(summaryElement.text());
                     news.setSourceSite(site.getSiteName());
                     news.setPublishedAt(OffsetDateTime.now().withNano(0));
-
-                    String dateString = (dateElement != null) ? dateElement.text() : null;
 
                     newsService.saveNews(news);
                 }
