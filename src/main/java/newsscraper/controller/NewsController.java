@@ -21,17 +21,17 @@ public class NewsController {
 
     private final NewsService newsService;
     private final KeywordService keywordService;
-    private final UserService userService; // UserService 의존성 주입 추가
+    private final UserService userService;
 
     /**
-     * 현재 로그인된 사용자의 ID를 가져오는 private 도우미 메소드
+     * 현재 로그인된 사용자의 ID를 가져온다
      */
     private Long getCurrentUserId(Authentication authentication) {
         String username = authentication.getName();
         UserDTO user = userService.getUser(username);
 
         if (user == null) {
-            // 토큰에 있는 사용자 이름이 DB에 없을 경우 예외를 발생시킵니다.
+            // 토큰에 있는 사용자 이름이 DB에 없을 경우 예외 처리
             throw new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username);
         }
         return user.getId();
@@ -61,8 +61,7 @@ public class NewsController {
 
     @DeleteMapping("/keywords/{id}")
     public ResponseEntity<String> deleteKeyword(@PathVariable("id") Long keywordId) {
-        // 참고: 이 로직은 현재 아무 사용자나 다른 사람의 키워드를 삭제할 수 있습니다.
-        // 추후에 이 키워드가 현재 로그인한 사용자의 것인지 확인하는 로직 추가를 권장합니다.
+        //TODO: 삭제 요청에 대하여 현재 로그인한 사용자인지 확인하는 로직 추가
         keywordService.removeKeyword(keywordId);
         return ResponseEntity.ok("키워드가 삭제되었습니다.");
     }

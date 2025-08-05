@@ -32,7 +32,6 @@ public class SecurityConfig {
         http
                 .cors(withDefaults()) // CORS 설정 추가
                 .csrf(AbstractHttpConfigurer::disable)
-                // ... (기존 설정 유지)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/users/register", "/api/users/login").permitAll()
                         .anyRequest().authenticated()
@@ -42,7 +41,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // CORS 설정 Bean 추가
+    // CORS 설정
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -55,16 +54,9 @@ public class SecurityConfig {
         return source;
     }
 
-    // AuthenticationManager를 Bean으로 등록합니다.
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
-    /*
-     * 이 파일에 있던 PasswordEncoder Bean은 AppConfig로 역할을 이전했으므로
-     * 반드시 삭제해야 합니다!
-     * @Bean
-     * public PasswordEncoder passwordEncoder() { ... }
-     */
 }

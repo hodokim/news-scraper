@@ -18,12 +18,12 @@ public class NewsService {
     }
 
     public void saveNews(NewsDTO news) {
-        // 중복된 링크가 없으면 DB에 저장하고 로그를 남깁니다.
+        // 중복된 링크가 없으면 DB에 저장하고 로그 찍기
         if (newsMapper.countByLink(news.getLink()) == 0) {
             newsMapper.insertNews(news);
             log.debug("  -> DB SAVE END: {}", news.getTitle());
         } else {
-            // 중복된 링크가 있으면, 중복되었다는 로그를 남깁니다.
+            // 중복된 링크가 있으면, 중복되었다는 로그 찍기
             log.debug("  -> DUPLICATED NEWS: {}", news.getTitle());
         }
     }

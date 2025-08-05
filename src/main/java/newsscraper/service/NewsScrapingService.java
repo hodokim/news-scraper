@@ -35,14 +35,6 @@ public class NewsScrapingService {
     private final KeywordMapper keywordMapper;
     private final NewsService newsService;
 
-    public void scrapeFromNaver(KeywordDTO keywordDto) {
-        scrapeFromSite(keywordDto, ScrapingSite.NAVER);
-    }
-
-    public void scrapeFromDaum(KeywordDTO keywordDto) {
-        scrapeFromSite(keywordDto, ScrapingSite.DAUM);
-    }
-
     @Scheduled(cron = "0 0 * * * *")
     public void scrapeNewsPeriodically() {
         log.info("정기 뉴스 스크래핑 작업을 시작합니다.");

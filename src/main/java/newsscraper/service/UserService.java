@@ -14,13 +14,11 @@ import java.util.Collections;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor // 의존성이 단순해졌으므로 다시 사용
+@RequiredArgsConstructor
 public class UserService implements UserDetailsService {
 
     private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder; // AppConfig에 있는 Bean이 주입됩니다.
-
-    // @Lazy를 사용했던 생성자는 삭제합니다.
+    private final PasswordEncoder passwordEncoder;
 
     public void registerUser(UserDTO user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));

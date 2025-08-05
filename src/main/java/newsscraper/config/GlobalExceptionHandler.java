@@ -11,8 +11,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<String> handleBadCredentialsException(BadCredentialsException ex) {
-        // BadCredentialsException이 발생하면 이 메서드가 호출됩니다.
-        // 클라이언트에게 401 Unauthorized 상태 코드와 예외 메시지를 반환합니다.
+        // 클라이언트에게 401 Unauthorized 상태 코드와 예외 메시지를 반환
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
     }
 }

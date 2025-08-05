@@ -20,7 +20,6 @@ public class KeywordService {
         keywordMapper.insertKeyword(keyword);
 
         // 2. 저장된 키워드에 대해 즉시 스크래핑을 비동기적으로 실행
-        // (insertKeyword 실행 시 useGeneratedKeys에 의해 keyword DTO에 id가 채워짐)
         newsScrapingService.scrapeForKeyword(keyword);
     }
 

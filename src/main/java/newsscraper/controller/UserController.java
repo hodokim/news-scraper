@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
-    private final AuthenticationManager authenticationManager; // AuthenticationManager 주입
-    private final JwtTokenProvider jwtTokenProvider;          // JwtTokenProvider 주입
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody UserDTO user) {
@@ -31,12 +31,12 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody UserDTO user) {
-        // 1. AuthenticationManager에게 인증 위임
+        //  AuthenticationManager에게 인증 위임
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
         );
 
-        // 2. 인증 성공! 이제 JWT 생성
+        // 2. 인증 성공. JWT 생성
         String token = jwtTokenProvider.createToken(authentication.getName());
 
         // 3. 생성된 토큰을 클라이언트에 반환

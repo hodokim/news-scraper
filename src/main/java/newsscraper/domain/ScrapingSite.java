@@ -18,7 +18,7 @@ public enum ScrapingSite {
             "div.c-item-content",
             "div.item-title a",
             "p.conts-desc",
-            "span.gem-subinfo" // 날짜와 언론사가 함께 있는 경우가 많음
+            "span.gem-subinfo"
     );
 
     // Getter

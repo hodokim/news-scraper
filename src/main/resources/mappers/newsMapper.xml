@@ -2,17 +2,39 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="newsscraper.mapper.NewsMapper">
 
+    <resultMap id="newsResultMap" type="newsscraper.dto.NewsDTO">
+        <id property="id" column="id"/>
+        <result property="keywordId" column="keyword_id"/>
+        <result property="title" column="title"/>
+        <result property="link" column="link"/>
+        <result property="summary" column="summary"/>
+        <result property="publishedAt" column="published_at"/>
+        <result property="sourceSite" column="source_site"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
     <insert id="insertNews" parameterType="NewsDTO" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO collected_news (keyword_id, title, link, summary, published_at, source_site)
-        VALUES (#{keywordId}, #{title}, #{link}, #{summary}, #{publishedAt}, #{sourceSite})
+        INSERT INTO collected_news (keyword_id, title, link, summary, published_at, source_site, created_at)
+        VALUES (#{keywordId}, #{title}, #{link}, #{summary}, #{publishedAt}, #{sourceSite}, #{createdAt})
     </insert>
 
-    <select id="findNewsByUserId" parameterType="long" resultType="NewsDTO">
-        SELECT cn.id, cn.keyword_id, cn.title, cn.link, cn.summary, cn.published_at, cn.source_site, cn.created_at
-        FROM collected_news cn
-        JOIN keywords k ON cn.keyword_id = k.id
-        WHERE k.user_id = #{userId}
-        ORDER BY cn.published_at DESC
+    <select id="findNewsByUserId" parameterType="long" resultMap="newsResultMap">
+        SELECT
+            cn.id,
+            cn.keyword_id,
+            cn.title,
+            cn.link,
+            cn.summary,
+            cn.published_at,
+            cn.source_site,
+            cn.created_at
+        FROM
+            collected_news cn
+                JOIN
+            keywords k ON cn.keyword_id = k.id
+        WHERE
+            k.user_id = #{userId}
+        ORDER BY
+            cn.published_at DESC
     </select>
 
     <select id="countByLink" parameterType="String" resultType="int">

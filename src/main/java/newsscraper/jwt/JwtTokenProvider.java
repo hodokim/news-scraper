@@ -50,18 +50,18 @@ public class JwtTokenProvider {
     }
 
     /**
-     * JWT에서 인증 정보를 조회합니다.
+     * JWT에서 인증 정보를 조회
      * @param token JWT
      * @return 인증 정보(Authentication)
      */
     public Authentication getAuthentication(String token) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(this.getUsername(token));
-        // UserDetails와 빈 권한 목록을 사용하여 Authentication 객체를 생성합니다.
+        // UserDetails를 이용해 Authentication 객체를 생성
         return new UsernamePasswordAuthenticationToken(userDetails, "", Collections.emptyList());
     }
 
     /**
-     * 토큰에서 회원 구별 정보(username)를 추출합니다.
+     * 토큰에서 회원 구별 정보(username)를 추출
      * @param token JWT
      * @return 사용자 이름
      */
@@ -70,7 +70,7 @@ public class JwtTokenProvider {
     }
 
     /**
-     * 토큰의 유효성 + 만료일자를 확인합니다.
+     * 토큰의 유효성 + 만료일자를 확인
      * @param token JWT
      * @return 토큰 유효 여부
      */
@@ -79,7 +79,6 @@ public class JwtTokenProvider {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            // MalformedJwtException, ExpiredJwtException, UnsupportedJwtException, IllegalArgumentException
             log.error("Invalid JWT token: {}", e.getMessage());
         }
         return false;
