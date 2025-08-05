@@ -21,9 +21,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
@@ -124,7 +122,6 @@ public class NewsScrapingService {
             for (Element element : newsElements) {
                 Element titleElement = element.selectFirst(site.getTitleSelector());
                 Element summaryElement = element.selectFirst(site.getSummarySelector());
-                Element dateElement = element.selectFirst(site.getDateSelector());
 
                 if (titleElement != null && summaryElement != null) {
                     NewsDTO news = new NewsDTO();
@@ -134,7 +131,7 @@ public class NewsScrapingService {
                     news.setSummary(summaryElement.text());
                     news.setSourceSite(site.getSiteName());
                     news.setPublishedAt(OffsetDateTime.now().withNano(0));
-
+                    news.setCreatedAt(OffsetDateTime.now().withNano(0)); // 이 코드가 핵심입니다.
                     newsService.saveNews(news);
                 }
             }
@@ -143,29 +140,5 @@ public class NewsScrapingService {
         } catch (IOException e) {
             log.error("[{}] Scraping ERROR for keyword '{}': {}", site.getSiteName(), keywordDto.getKeyword(), e.getMessage());
         }
-    }
-
-
-    private OffsetDateTime parseNaverDate(String dateString) {
-        OffsetDateTime now = OffsetDateTime.now();
-        try {
-            if (dateString.contains("분 전")) {
-                long minutesAgo = Long.parseLong(dateString.replaceAll("[^0-9]", ""));
-                return now.minusMinutes(minutesAgo);
-            } else if (dateString.contains("시간 전")) {
-                long hoursAgo = Long.parseLong(dateString.replaceAll("[^0-9]", ""));
-                return now.minusHours(hoursAgo);
-            } else if (dateString.contains("일 전")) {
-                long daysAgo = Long.parseLong(dateString.replaceAll("[^0-9]", ""));
-                return now.minusDays(daysAgo);
-            } else if (dateString.matches("\\d{4}\\.\\d{2}\\.\\d{2}\\.")) {
-                dateString = dateString.substring(0, dateString.length() - 1);
-                LocalDate date = LocalDate.parse(dateString, DateTimeFormatter.ofPattern("yyyy.MM.dd"));
-                return date.atStartOfDay(now.getOffset()).toOffsetDateTime();
-            }
-        } catch (Exception e) {
-            log.error("네이버 날짜 파싱 실패: '{}'", dateString, e);
-        }
-        return now;
     }
 }
