@@ -23,4 +23,4 @@ RUN ./mvnw clean package -DskipTests
 
 # 7. 애플리케이션 실행
 # pom.xml의 version에 맞춰 파일명을 확인
-ENTRYPOINT ["java", "-jar", "target/news-scrap-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "target/news-scraper-0.0.1-SNAPSHOT.jar"]
