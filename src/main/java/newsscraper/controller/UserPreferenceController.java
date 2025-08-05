@@ -31,6 +31,20 @@ public class UserPreferenceController {
     }
 
     /**
+     * 로그인된 사용자 본인의 정보를 조회
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getMyInfo(Authentication authentication) {
+        UserDTO user = userService.getUser(authentication.getName());
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        // 응답 시 비밀번호는 보내지 않도록 null 처리
+        user.setPassword(null);
+        return ResponseEntity.ok(user);
+    }
+
+    /**
      * 사용자의 선호 스크래핑 사이트를 추가
      */
     @PostMapping("/preferences/sites")
